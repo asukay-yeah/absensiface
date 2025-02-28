@@ -16,3 +16,6 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// face recognition API
+Route::get('/faces', 'FaceRecognitionController@getAllFaces');

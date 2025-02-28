@@ -7,14 +7,14 @@ Route::get('/', function () {
 Auth::routes();
 Route::get('/home', 'HomeController@index')->name('home');
 
-
+// Data management routes (CRUD)
 Route::resource('data', 'DataController');
+
+// Attendance routes
 Route::resource('absen', 'UserController');
 
-
-// Route::get('/data', 'DataController@index')->name('data');
-// Route::get('/tambah', 'TambahController@index')->name('tambah');
-// routes/web.php
-// Route::resource('tambah', 'TambahController');
-
+// Report route
 Route::get('/report', 'ReportController@index')->name('report');
+
+// Add a web-accessible route for face data when needed for the attendance kiosk
+Route::get('/api/faces', 'FaceRecognitionController@getAllFaces');

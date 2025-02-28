@@ -28,6 +28,7 @@ class UserController extends Controller
 
         $this->checkAbsentStatus();
 
+        // Check if employee exists based on nama and NIP
         $pegawai = Pegawai::where('nama', $request->nama)->where('nip', $request->nip)->first();
 
         if (!$pegawai) {
@@ -38,12 +39,9 @@ class UserController extends Controller
         $now = Carbon::now();
         $absenType = $request->absen_type;
 
-        
-
-
         // 1. ABSEN DATANG (04:30 - 09:30)
         if ($absenType === 'datang') {
-            if ($now->between(Carbon::parse('04:30'), Carbon::parse('9:30'))) {
+            if ($now->between(Carbon::parse('04:30'), Carbon::parse('09:30'))) {
                 if (Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->exists()) {
                     return back()->with('warning', 'Anda sudah absen datang hari ini. Nomor duduk anda : ' . Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->first()->nomor_duduk);
                 }
@@ -128,6 +126,4 @@ class UserController extends Controller
             }
         }
     }
-
 }
-

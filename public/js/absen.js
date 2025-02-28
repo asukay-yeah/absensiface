@@ -1,219 +1,461 @@
+// ===== Face Recognition for Attendance =====
+let faceRecognitionActive = false;
+let knownFaces = [];
+let currentUser = null;
+let attendanceType = null; // 'datang' or 'pulang'
+let recognizedEmployees = new Set(); // Track employees who have already been greeted
+
+// Initialize the system
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize face-api
+    try {
+        await initFaceApi();
+        console.log('Face API initialized successfully');
+        
+        // Fetch known faces from the server
+        await fetchKnownFaces();
+        
+        // Start the video with face detection
+        await startVideo();
+        
+        // Setup attendance buttons after video is set up
+        setupAttendanceButtons();
+    } catch (error) {
+        console.error('Error initializing face recognition:', error);
+        showError('Could not initialize face recognition system. Please refresh and try again.');
+    }
+    
+    // Update datetime display
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+});
+
+// Fetch all employee face data from the server
+async function fetchKnownFaces() {
+    try {
+        const response = await fetch('/api/faces');
+        const data = await response.json();
+        
+        if (data.success && data.faces) {
+            knownFaces = data.faces.filter(face => face.descriptor);
+            console.log(`Loaded ${knownFaces.length} known faces`);
+        } else {
+            console.warn('No faces loaded:', data.message || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Error fetching known faces:', error);
+        showError('Failed to load employee data. Please try again later.');
+    }
+}
+
+// Start video and face recognition
 async function startVideo() {
+    console.log('Starting video...');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
+    
+    if (!video || !canvas) {
+        console.error('Video or canvas element not found');
+        return;
+    }
+    
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+        // Get user's camera stream
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: "user"
+            }
+        });
+        
         video.srcObject = stream;
-
+        
+        // Wait for video to be loaded
         video.onloadedmetadata = () => {
             video.play();
             adjustCanvasSize();
             drawFaceGuide();
+            
+            // Start face recognition
+            startFaceRecognition();
         };
-
+        
+        // Handle resizing
         window.addEventListener('resize', adjustCanvasSize);
     } catch (error) {
         console.error("Error accessing the camera: ", error);
-        alert("Tidak dapat mengakses kamera. Pastikan kamera tersedia dan izin diberikan.");
-    }
-
-    function adjustCanvasSize() {
-        const videoRect = video.getBoundingClientRect();
-        canvas.width = videoRect.width;
-        canvas.height = videoRect.height;
+        showError("Cannot access camera. Please ensure camera is available and permission is granted.");
     }
 }
 
+// Adjust canvas size to match video display size
+function adjustCanvasSize() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    
+    if (!video || !canvas) return;
+    
+    const videoRect = video.getBoundingClientRect();
+    canvas.width = videoRect.width;
+    canvas.height = videoRect.height;
+}
+
+// Draw face guide oval
 function drawFaceGuide() {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    // Menyesuaikan ukuran canvas
+    
+    if (!video || !canvas) return;
+    
+    // Adjust canvas size
     const videoRect = video.getBoundingClientRect();
     if (canvas.width !== videoRect.width || canvas.height !== videoRect.height) {
         canvas.width = videoRect.width;
         canvas.height = videoRect.height;
     }
-
-    // Bersihkan canvas
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Kompensasi untuk transformasi scale-x-[-1] pada video
+    
+    // Compensate for mirror effect
     ctx.save();
     ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
-
-
-    // Ambil tengah canvas
+    
+    // Draw oval face guide
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
+    const faceWidth = canvas.width * 0.40;
+    const faceHeight = canvas.height * 0.85;
     
-    // Ukuran oval dalam format portrait
-    const faceWidth = canvas.width * 0.40;  // Lebih kecil dari sebelumnya
-    const faceHeight = canvas.height * 0.85; // Tetap tinggi
-    
-    // Membuat oval sebagai mask
+    // Create oval mask
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, faceWidth / 2, faceHeight / 2, 0, 0, Math.PI * 2);
     ctx.clip();
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // Buat area oval transparan
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
-
-    // Gambar garis putus-putus untuk oval
+    
+    // Draw dashed oval outline
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 2;
-    ctx.setLineDash([8, 4]); // Membuat garis putus-putus
+    ctx.setLineDash([8, 4]);
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, faceWidth / 2, faceHeight / 2, 0, 0, Math.PI * 2);
     ctx.stroke();
-
-    ctx.restore(); // Kembalikan transformasi
-
-    requestAnimationFrame(drawFaceGuide);
-}
-
-// Jalankan fungsi saat halaman dimuat
-window.onload = startVideo;
-
-function closeNotification() {
-    document.getElementById('notification').style.display = 'none';
-}
-
-
-let selectedSeat = null;
-const bookedSeats = new Set();
-const MAX_SEATS = 10;
-
-// Modified seat-related code to handle missing elements
-document.addEventListener('DOMContentLoaded', function() {
-    // Elements - with null checks to prevent errors if elements don't exist
-    const modal = document.getElementById('seatModal');
-    const closeModalBtn = document.getElementById('closeModal');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const confirmBtn = document.getElementById('confirmBtn');
-    const seatContainer = document.getElementById('seatContainer');
-    const seatCount = document.getElementById('seatCount');
-    const maxSeatsWarning = document.getElementById('maxSeatsWarning');
     
-    // Check if seat-related elements exist
-    if (!modal || !seatContainer) {
-        console.log("Seat modal system is not present or has been removed");
-        return; // Exit early if required elements don't exist
+    ctx.restore();
+    
+    // Only continue animation loop if face recognition is not active
+    if (!faceRecognitionActive) {
+        requestAnimationFrame(drawFaceGuide);
     }
+}
 
-    // Update seat count display function with null check
-    function updateSeatCount() {
-        if (seatCount) {
-            seatCount.textContent = bookedSeats.size;
-        }
-    }
-
-    // Generate seats
-    function generateSeats() {
-        if (!seatContainer) return;
+// Start face recognition process
+function startFaceRecognition() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    
+    if (!video || !canvas) return;
+    
+    faceRecognitionActive = true;
+    
+    // Create overlay for showing face detection
+    const faceOverlay = createFaceOverlay(video, video.parentNode);
+    
+    // Recognition loop
+    async function recognizeFace() {
+        if (!faceRecognitionActive) return;
         
-        seatContainer.innerHTML = '';
-        for (let i = 1; i <= 50; i++) {
-            const seatBtn = document.createElement('button');
-            seatBtn.className = `
-                p-2 rounded-lg relative flex items-center justify-center
-                ${bookedSeats.has(i) ? 'bg-gray-200 cursor-not-allowed' : 'bg-white hover:bg-gray-100'}
-                border border-gray-200 transition-colors duration-200
-            `;
-            seatBtn.textContent = i;
-
-            if (bookedSeats.has(i)) {
-                const checkmark = document.createElement('div');
-                checkmark.innerHTML = `
-                    <svg class="w-4 h-4 absolute text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                `;
-                seatBtn.appendChild(checkmark);
-                seatBtn.disabled = true;
+        try {
+            // Detect face in current video frame
+            const detection = await detectFace(video);
+            
+            if (detection) {
+                // Draw face detection on overlay
+                drawFaceDetections(faceOverlay, detection, {
+                    boxColor: '#00FF00',
+                    labelText: 'Wajah Terdeteksi'
+                });
+                
+                // Check if we have enough known faces to attempt recognition
+                if (knownFaces.length > 0) {
+                    // Find best match among known faces
+                    const match = await findBestMatch(detection.descriptor, knownFaces);
+                    
+                    if (match) {
+                        // We found a matching employee!
+                        const matchedFace = knownFaces.find(face => face.id === match.id);
+                        
+                        if (matchedFace) {
+                            // Stop recognition loop
+                            faceRecognitionActive = false;
+                            
+                            // Show success message
+                            handleSuccessfulRecognition(matchedFace, match.confidence);
+                            return;
+                        }
+                    }
+                }
             } else {
-                seatBtn.onclick = () => selectSeat(i, seatBtn);
+                // Clear overlay when no face is detected
+                const ctx = faceOverlay.getContext('2d');
+                ctx.clearRect(0, 0, faceOverlay.width, faceOverlay.height);
             }
-
-            seatContainer.appendChild(seatBtn);
+        } catch (error) {
+            console.error('Error during face recognition:', error);
         }
-    }
-
-    // Seat selection
-    function selectSeat(seatNumber, button) {
-        if (!seatContainer) return;
         
-        const previousSelection = seatContainer.querySelector('.bg-green-500');
-        if (previousSelection) {
-            previousSelection.classList.remove('bg-green-500', 'text-white');
-            previousSelection.classList.add('bg-white');
-        }
-
-        selectedSeat = seatNumber;
-        button.classList.remove('bg-white');
-        button.classList.add('bg-green-500', 'text-white', 'transform', 'scale-105');
-        
-        if (confirmBtn) {
-            confirmBtn.disabled = false;
-        }
-    }
-
-    // Modal handlers - removed openModal function
-    function closeModal() {
-        if (!modal) return;
-        
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        selectedSeat = null;
-    }
-
-    function confirmSelection() {
-        if (!selectedSeat) return;
-        
-        if (bookedSeats.size < MAX_SEATS) {
-            bookedSeats.add(selectedSeat);
-            updateSeatCount();
-            closeModal();
-        } else if (maxSeatsWarning) {
-            maxSeatsWarning.classList.remove('hidden');
-        }
-    }
-
-    // Event listeners with null checks
-    if (closeModalBtn) {
-        closeModalBtn.onclick = closeModal;
+        // Continue recognition loop
+        requestAnimationFrame(recognizeFace);
     }
     
-    if (cancelBtn) {
-        cancelBtn.onclick = closeModal;
+    // Start the recognition loop
+    recognizeFace();
+}
+
+// Handle successful face recognition
+function handleSuccessfulRecognition(employee, confidence) {
+    console.log(`Employee recognized: ${employee.nama} (ID: ${employee.id}) with confidence: ${confidence.toFixed(2)}`);
+    
+    // Set current user
+    currentUser = employee;
+    
+    // Show greeting notification only if this employee hasn't been greeted yet
+    if (!recognizedEmployees.has(employee.id)) {
+        showBriefGreeting(employee);
+        recognizedEmployees.add(employee.id); // Mark this employee as greeted
     }
     
-    if (confirmBtn) {
-        confirmBtn.onclick = confirmSelection;
-    }
-
-    // Close modal when clicking outside
-    if (modal) {
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        };
-    }
-
-    // Initial setup only if necessary elements exist
-    if (seatContainer) {
-        generateSeats();
+    // If attendance type is already selected, submit attendance
+    if (attendanceType) {
+        submitAttendance(employee.id, employee.nama, employee.nip, attendanceType);
+    } else {
+        // Highlight attendance buttons
+        highlightAttendanceButtons();
     }
     
-    if (seatCount) {
-        updateSeatCount();
-    }
-});
+    // Continue face recognition after a short delay
+    setTimeout(() => {
+        faceRecognitionActive = true;
+        startFaceRecognition();
+    }, 5000);
+}
 
+// Show a brief greeting based on time of day
+function showBriefGreeting(employee) {
+    // Get the current hour to determine greeting
+    const currentHour = new Date().getHours();
+    let greeting = "Selamat ";
+    
+    if (currentHour >= 3 && currentHour < 11) {
+        greeting += "pagi";
+    } else if (currentHour >= 11 && currentHour < 15) {
+        greeting += "siang";
+    } else if (currentHour >= 15 && currentHour < 19) {
+        greeting += "sore";
+    } else {
+        greeting += "malam";
+    }
+    
+    // Create the greeting element
+    const greetingElement = document.createElement('div');
+    greetingElement.id = 'greeting-notification';
+    greetingElement.className = 'fixed top-5 left-5 bg-blue-900 text-white px-4 py-2 rounded-lg shadow-lg z-50 opacity-0 transition-opacity duration-300';
+    greetingElement.style.fontSize = '1rem';
+    
+    greetingElement.innerHTML = `${greeting}, ${employee.nama}!`;
+    
+    // Add to page
+    document.body.appendChild(greetingElement);
+    
+    // Fade in
+    setTimeout(() => {
+        greetingElement.classList.remove('opacity-0');
+        greetingElement.classList.add('opacity-100');
+    }, 10);
+    
+    // Fade out and remove after 2 seconds
+    setTimeout(() => {
+        greetingElement.classList.remove('opacity-100');
+        greetingElement.classList.add('opacity-0');
+        
+        setTimeout(() => {
+            greetingElement.remove();
+        }, 300);
+    }, 2000);
+}
+
+// Highlight attendance buttons to draw attention to them
+function highlightAttendanceButtons() {
+    const buttonsContainer = document.getElementById('attendance-buttons');
+    if (buttonsContainer) {
+        buttonsContainer.classList.add('animate-pulse');
+        setTimeout(() => {
+            buttonsContainer.classList.remove('animate-pulse');
+        }, 2000);
+    }
+}
+
+// Setup attendance type buttons (Clock In/Out)
+function setupAttendanceButtons() {
+    // Create buttons if they don't exist
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.id = 'attendance-buttons';
+    buttonsContainer.className = 'flex justify-center space-x-4 mt-6';
+    
+    // Clock In button
+    const clockInBtn = document.createElement('button');
+    clockInBtn.id = 'clock-in-btn';
+    clockInBtn.className = 'px-6 py-3 bg-green-600 text-white font-medium rounded-lg shadow-md hover:bg-green-700 transition duration-200';
+    clockInBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
+        Absen Datang
+    `;
+    
+    // Clock Out button
+    const clockOutBtn = document.createElement('button');
+    clockOutBtn.id = 'clock-out-btn';
+    clockOutBtn.className = 'px-6 py-3 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition duration-200';
+    clockOutBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        </svg>
+        Absen Pulang
+    `;
+    
+    // Add buttons to container
+    buttonsContainer.appendChild(clockInBtn);
+    buttonsContainer.appendChild(clockOutBtn);
+    
+    // Find the video container to place buttons BELOW it
+    const videoContainer = document.querySelector('.relative.aspect-video.mb-4');
+    
+    if (videoContainer) {
+        // Insert after the video container
+        videoContainer.parentNode.insertBefore(buttonsContainer, videoContainer.nextSibling);
+    } else {
+        // Fallback if the expected container is not found
+        const fallbackContainer = document.querySelector('.h-screen.w-full.flex.items-center.justify-center.flex-col');
+        if (fallbackContainer) {
+            // Add to the bottom part of the main container
+            fallbackContainer.appendChild(buttonsContainer);
+        }
+    }
+    
+    // Add event listeners
+    clockInBtn.addEventListener('click', () => setAttendanceType('datang'));
+    clockOutBtn.addEventListener('click', () => setAttendanceType('pulang'));
+}
+
+// Set attendance type and update UI
+function setAttendanceType(type) {
+    attendanceType = type;
+    
+    // Update button styles
+    const clockInBtn = document.getElementById('clock-in-btn');
+    const clockOutBtn = document.getElementById('clock-out-btn');
+    
+    if (clockInBtn && clockOutBtn) {
+        if (type === 'datang') {
+            clockInBtn.classList.add('ring-4', 'ring-green-300');
+            clockOutBtn.classList.remove('ring-4', 'ring-blue-300');
+        } else {
+            clockInBtn.classList.remove('ring-4', 'ring-green-300');
+            clockOutBtn.classList.add('ring-4', 'ring-blue-300');
+        }
+    }
+    
+    // If we already have a recognized user, submit attendance
+    if (currentUser) {
+        submitAttendance(currentUser.id, currentUser.nama, currentUser.nip, type);
+    }
+}
+
+// Submit attendance to server
+function submitAttendance(employeeId, nama, nip, type) {
+    // Create a form to submit attendance
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/absen';
+    form.style.display = 'none';
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = csrfToken;
+    form.appendChild(csrfInput);
+    
+    // Add employee name
+    const namaInput = document.createElement('input');
+    namaInput.type = 'hidden';
+    namaInput.name = 'nama';
+    namaInput.value = nama;
+    form.appendChild(namaInput);
+    
+    // Add employee NIP
+    const nipInput = document.createElement('input');
+    nipInput.type = 'hidden';
+    nipInput.name = 'nip';
+    nipInput.value = nip;
+    form.appendChild(nipInput);
+    
+    // Add attendance type
+    const typeInput = document.createElement('input');
+    typeInput.type = 'hidden';
+    typeInput.name = 'absen_type';
+    typeInput.value = type;
+    form.appendChild(typeInput);
+    
+    // Add form to document and submit it
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Show error message
+function showError(message) {
+    // Create error notification if it doesn't exist
+    const errorNotification = document.createElement('div');
+    errorNotification.className = 'fixed top-5 right-5 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md transition-opacity duration-300 opacity-0';
+    errorNotification.innerHTML = `
+        <div class="flex items-center">
+            <div class="py-1">
+                <svg class="fill-current h-6 w-6 text-red-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                    <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm1.41-1.41A8 8 0 1 0 15.66 4.34 8 8 0 0 0 4.34 15.66zm9.9-8.49L11.41 10l2.83 2.83-1.41 1.41L10 11.41l-2.83 2.83-1.41-1.41L8.59 10 5.76 7.17l1.41-1.41L10 8.59l2.83-2.83 1.41 1.41z"/>
+                </svg>
+            </div>
+            <div>
+                <p>${message}</p>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(errorNotification);
+    
+    // Fade in
+    setTimeout(() => {
+        errorNotification.classList.remove('opacity-0');
+        errorNotification.classList.add('opacity-100');
+    }, 10);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        errorNotification.classList.remove('opacity-100');
+        errorNotification.classList.add('opacity-0');
+        setTimeout(() => {
+            errorNotification.remove();
+        }, 300);
+    }, 5000);
+}
+
+// Update date and time display
 function updateDateTime() {
     const now = new Date();
 
@@ -222,7 +464,7 @@ function updateDateTime() {
     const seconds = now.getSeconds().toString().padStart(2, '0');
 
     const day = now.getDate().toString().padStart(2, '0');
-    const month = now.toLocaleString('en-US', { month: 'long' }); // Nama bulan
+    const month = now.toLocaleString('en-US', { month: 'long' }); // Month name
     const year = now.getFullYear();
 
     const timeString = `${hours}:${minutes}:${seconds}`;
@@ -234,51 +476,11 @@ function updateDateTime() {
     }
 }
 
-setInterval(updateDateTime, 1000); // Update setiap 1 detik
-updateDateTime(); // Jalankan saat halaman pertama kali dimuat
-
-function showTableNotification() {
-    const toast = document.getElementById('toast-default');
-    if (!toast) return;
-    
-    // Show the notification
-    toast.classList.remove('opacity-0');
-    toast.classList.add('opacity-100');
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        toast.classList.remove('opacity-100');
-        toast.classList.add('opacity-0');
-    }, 3000);
-}
-
-// Function to close the attendance notification manually
+// Function to close notifications manually
 function closeNotification() {
-    const notification = document.getElementById('notification');
-    if (!notification) return;
-    
-    notification.classList.remove('opacity-100');
-    notification.classList.add('opacity-0');
-}
-
-// Function to show and auto-hide the attendance notification
-function showAttendanceNotification() {
-    const notification = document.getElementById('notification');
-    if (!notification) return;
-    
-    // Show the notification
-    notification.classList.remove('opacity-0');
-    notification.classList.add('opacity-100');
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
+    const notifications = document.querySelectorAll('.notification, #notification');
+    notifications.forEach(notification => {
         notification.classList.remove('opacity-100');
         notification.classList.add('opacity-0');
-    }, 3000);
+    });
 }
-
-// Show notifications when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    showTableNotification();
-    showAttendanceNotification();
-});

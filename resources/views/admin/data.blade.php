@@ -20,6 +20,8 @@
     <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.46.0/dist/apexcharts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/simple-datatables@9.0.3"></script>
+    <script src="{{ asset('js/face-api/face-api.min.js') }}"></script>
+    <script src="{{ asset('js/face-detection.js') }}"></script>
 
     <!-- Export Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -182,9 +184,6 @@
 
 
             </div>
-
-
-
         </div>
     </div>
 
@@ -237,19 +236,33 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Face Detection Section -->
+                <div class="mb-4">
+                    <label class="block mb-2 font-medium text-slate-500">Data Wajah untuk Rekognisi</label>
+                    <p class="text-sm text-gray-500 mb-2">Mohon posisikan wajah dengan jelas di depan kamera untuk
+                        proses deteksi</p>
+                </div>
+
                 <div class="relative w-full mb-4">
                     <video id="video" class="w-full rounded-md shadow-md hidden" style="transform: scaleX(-1);"></video>
                     <canvas id="canvas" class="hidden w-full rounded-md shadow-md"></canvas>
                 </div>
 
+                <!-- Hidden input to store face descriptor -->
+                <input type="hidden" id="face_descriptor" name="face_descriptor">
+
                 <p id="register-btn"
-                    class="cursor-pointer text-center w-full bg-[#252C58] text-white duration-150 py-3 rounded-md hover:bg-blue-800">Daftarkan
+                    class="cursor-pointer text-center w-full bg-[#252C58] text-white duration-150 py-3 rounded-md hover:bg-blue-800">
+                    Daftarkan
                     Wajah Anda</p>
                 <p id="capture-btn"
-                    class="cursor-pointer text-center w-full bg-[#D6A628] text-white duration-150 py-3 rounded-md mt-3 hover:bg-yellow-600">Scan
+                    class="cursor-pointer text-center w-full bg-[#D6A628] text-white duration-150 py-3 rounded-md mt-3 hover:bg-yellow-600">
+                    Scan
                     Wajah ( Ambil Gambar )</p>
                 <p id="reset-btn"
-                    class="cursor-pointer text-center w-full bg-gray-500 text-white py-2 rounded-md mt-2 hover:bg-gray-600 hidden">Ambil
+                    class="cursor-pointer text-center w-full bg-gray-500 text-white py-2 rounded-md mt-2 hover:bg-gray-600 hidden">
+                    Ambil
                     Gambar Ulang</p>
 
                 <!-- button submit form -->
@@ -261,7 +274,7 @@
         </div>
     </form>
 
-    <!-- dropdown edit -->
+    <!-- In the "Edit Pegawai" form (dropdown1) -->
     <div id="dropdown1"
         class="z-10 right-5 border border-neutral-300 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-md">
         <div class="bg-white p-5 rounded-lg shadow-md max-w-full">
@@ -312,17 +325,30 @@
                         </select>
                     </div>
                 </div>
+
+                <!-- Face Detection Section for Edit Form -->
+                <div class="mb-4">
+                    <label class="block mb-2 font-medium text-slate-500">Update Data Wajah</label>
+                    <p class="text-sm text-gray-500 mb-2">Perbaharui data wajah pegawai untuk rekognisi</p>
+                </div>
+
                 <div class="relative w-full mb-4">
-                    <video id="video1" class="w-full rounded-md shadow-md hidden" style="transform: scaleX(-1);"></video>
+                    <video id="video1" class="w-full rounded-md shadow-md hidden"
+                        style="transform: scaleX(-1);"></video>
                     <canvas id="canvas1" class="hidden w-full rounded-md shadow-md"></canvas>
                 </div>
 
+                <!-- Hidden input for face descriptor in edit form -->
+                <input type="hidden" id="face_descriptor_edit" name="face_descriptor">
+
                 <p id="register-edit"
-                    class="cursor-pointer text-center w-full bg-[#252C58] text-white duration-150 py-3 rounded-md hover:bg-blue-800">Daftarkan
+                    class="cursor-pointer text-center w-full bg-[#252C58] text-white duration-150 py-3 rounded-md hover:bg-blue-800">
+                    Daftarkan
                     Wajah Anda
                 </p>
                 <p id="capture-edit"
-                    class="cursor-pointer text-center w-full bg-[#D6A628] text-white duration-150 py-3 rounded-md mt-3 hover:bg-yellow-600">Scan
+                    class="cursor-pointer text-center w-full bg-[#D6A628] text-white duration-150 py-3 rounded-md mt-3 hover:bg-yellow-600">
+                    Scan
                     Wajah ( Ambil Gambar )
                 </p>
 
@@ -330,7 +356,6 @@
                 <button type="submit"
                     class="w-full bg-[#198754] text-white duration-150 py-3 rounded-md mt-3 hover:bg-green-600">Simpan
                     Data</button>
-
             </form>
         </div>
     </div>
@@ -344,7 +369,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-
         // ✅ Fungsi untuk menampilkan modal edit di dekat tombol yang diklik
         function openEditModal(element, event) {
             event.preventDefault(); // Mencegah reload halaman

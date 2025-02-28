@@ -22,21 +22,25 @@ class DataController extends Controller
         return view('admin.data', compact('karyawan'));
     }
 
-    // public function create(){
-    //     return view('admin.data');
-    // }
-
     public function store(Request $request){
         $request->validate([
             'nama' => 'required',
             'nip' => 'required',
             'jabatan' => 'required',
             'tim' => 'nullable',
+            'face_descriptor' => 'nullable',
         ]);
 
-        Pegawai::create($request->all());
+        $data = $request->all();
+        
+        // Store the face descriptor if provided
+        if ($request->has('face_descriptor') && !empty($request->face_descriptor)) {
+            $data['face_descriptor'] = $request->face_descriptor;
+        }
 
-        return redirect('/data');
+        Pegawai::create($data);
+
+        return redirect('/data')->with('success', 'Data pegawai berhasil ditambahkan');
     }
 
     public function show($id)
@@ -52,10 +56,19 @@ class DataController extends Controller
             'nip' => 'required',
             'jabatan' => 'required',
             'tim' => 'nullable',
+            'face_descriptor' => 'nullable',
         ]);
 
         $karyawan = Pegawai::findOrFail($id);
-        $karyawan->update($request->all());
+        
+        $data = $request->all();
+        
+        // Update the face descriptor if provided
+        if ($request->has('face_descriptor') && !empty($request->face_descriptor)) {
+            $data['face_descriptor'] = $request->face_descriptor;
+        }
+        
+        $karyawan->update($data);
 
         return response()->json(['success' => 'Data berhasil diperbarui']);
     }
@@ -65,6 +78,4 @@ class DataController extends Controller
         $karyawan->delete();
         return redirect('/data');
     }
-
-
 }

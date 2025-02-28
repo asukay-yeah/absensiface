@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face API Test</title>
+    <script src="/js/face-api/face-api.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .camera-container {
+            margin-top: 20px;
+            position: relative;
+        }
+        video, canvas {
+            width: 100%;
+            max-width: 640px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Face API Test Page</h1>
+    <p>This page tests if the face-api.js is working properly with your model files.</p>
+    
+    <div id="log">Loading face-api.js...</div>
+    
+    <div>
+        <button id="test-models">Test Model Loading</button>
+        <button id="test-camera">Test Camera</button>
+        <button id="test-detection">Test Face Detection</button>
+    </div>
+    
+    <div class="camera-container">
+        <video id="video" autoplay muted playsinline style="display: none;"></video>
+        <canvas id="overlay" style="display: none;"></canvas>
+    </div>
+    
+    <script>
+        // Log to both console and the log div
+        function log(message) {
+            console.log(message);
+            const logEl = document.getElementById('log');
+            logEl.innerHTML += message + '<br>';
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        // Initialize face-api.js
+        async function initFaceApi() {
+            log('Testing face-api.js availability...');
+            if (!window.faceapi) {
+                log('ERROR: face-api.js is not loaded properly!');
+                return false;
+            }
+            log('✓ face-api.js is available');
+            return true;
+        }
+        
+        // Test model loading
+        async function testModelLoading() {
+            log('Testing model loading...');
+            try {
+                const modelPath = '/js/face-api/models';
+                
+                // Test SSD MobileNet loading
+                log('Loading SSD MobileNet model...');
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(modelPath);
+                log('✓ SSD MobileNet model loaded successfully');
+                
+                // Test TinyFaceDetector loading
+                log('Loading Tiny Face Detector model...');
+                await faceapi.nets.tinyFaceDetector.loadFromUri(modelPath);
+                log('✓ Tiny Face Detector model loaded successfully');
+                
+                // Test FaceLandmark68Net loading
+                log('Loading Face Landmark model...');
+                await faceapi.nets.faceLandmark68Net.loadFromUri(modelPath);
+                log('✓ Face Landmark model loaded successfully');
+                
+                // Test FaceRecognitionNet loading
+                log('Loading Face Recognition model...');
+                await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
+                log('✓ Face Recognition model loaded successfully');
+                
+                log('All models loaded successfully! ✓');
+                return true;
+            } catch (error) {
+                log(`ERROR loading models: ${error.message}`);
+                console.error(error);
+                return false;
+            }
+        }
+        
+        // Test camera access
+        async function testCamera() {
+            log('Testing camera access...');
+            const video = document.getElementById('video');
+            video.style.display = 'block';
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' } 
+                });
+                video.srcObject = stream;
+                log('✓ Camera access successful');
+                return stream;
+            } catch (error) {
+                log(`ERROR accessing camera: ${error.message}`);
+                console.error(error);
+                return null;
+            }
+        }
+        
+        // Test face detection
+        async function testFaceDetection(stream) {
+            if (!stream) {
+                log('Cannot test face detection without camera access');
+                return;
+            }
+            
+            log('Testing face detection...');
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('overlay');
+            canvas.style.display = 'block';
+            
+            // Make sure canvas size matches video
+            canvas.width = video.clientWidth;
+            canvas.height = video.clientHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Wait for video to be playing
+            await new Promise(resolve => {
+                if (video.readyState >= 2) {
+                    resolve();
+                } else {
+                    video.onloadeddata = () => resolve();
+                }
+            });
+            
+            try {
+                // Try SSD MobileNet first
+                log('Detecting face with SSD MobileNet...');
+                const detection = await faceapi.detectSingleFace(video, 
+                    new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                    .withFaceLandmarks();
+                
+                if (detection) {
+                    log('✓ Face detected with SSD MobileNet!');
+                    // Draw detection
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const dims = faceapi.matchDimensions(canvas, video, true);
+                    const resizedResult = faceapi.resizeResults(detection, dims);
+                    faceapi.draw.drawDetections(canvas, resizedResult);
+                    faceapi.draw.drawFaceLandmarks(canvas, resizedResult);
+                } else {
+                    log('No face detected with SSD MobileNet, trying Tiny Face Detector...');
+                    
+                    // Try Tiny Face Detector as fallback
+                    const tinyDetection = await faceapi.detectSingleFace(video, 
+                        new faceapi.TinyFaceDetectorOptions({ minConfidence: 0.5 }))
+                        .withFaceLandmarks();
+                    
+                    if (tinyDetection) {
+                        log('✓ Face detected with Tiny Face Detector!');
+                        // Draw detection
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        const dims = faceapi.matchDimensions(canvas, video, true);
+                        const resizedResult = faceapi.resizeResults(tinyDetection, dims);
+                        faceapi.draw.drawDetections(canvas, resizedResult);
+                        faceapi.draw.drawFaceLandmarks(canvas, resizedResult);
+                    } else {
+                        log('No face detected with either model. Try moving your face in front of the camera.');
+                    }
+                }
+            } catch (error) {
+                log(`ERROR during face detection: ${error.message}`);
+                console.error(error);
+            }
+        }
+        
+        // Set up event listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize face-api.js
+            const initialized = await initFaceApi();
+            if (!initialized) return;
+            
+            // Set up button event listeners
+            document.getElementById('test-models').addEventListener('click', testModelLoading);
+            
+            let cameraStream = null;
+            document.getElementById('test-camera').addEventListener('click', async () => {
+                cameraStream = await testCamera();
+            });
+            
+            document.getElementById('test-detection').addEventListener('click', async () => {
+                // If camera is not yet started, start it
+                if (!cameraStream) {
+                    cameraStream = await testCamera();
+                }
+                await testFaceDetection(cameraStream);
+            });
+        });
+    </script>
+</body>
+</html>

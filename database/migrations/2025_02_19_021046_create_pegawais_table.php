@@ -19,6 +19,8 @@ class CreatePegawaisTable extends Migration
             $table->string('nip', 30);
             $table->enum('jabatan', ['kabalmon', 'katim', 'ppk', 'staff', 'staff_pelayanan', 'security', 'cs', 'driver', 'magang'])->default('staff');
             $table->enum('tim', ['monev', 'penerbitan', 'pkip', 'tu'])->nullable();
+            $table->text('face_data')->nullable();
+            $table->text('face_descriptor')->nullable();
             $table->timestamps();
         });
     }
