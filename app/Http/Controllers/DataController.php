@@ -18,6 +18,7 @@ class DataController extends Controller
                 ->orWhere('tim', 'like', '%' . $search . '%');
             });
         })
+        ->orderBy('id', 'desc')
         ->get();
         return view('admin.data', compact('karyawan'));
     }

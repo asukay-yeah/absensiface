@@ -27,18 +27,20 @@
 <body>
     <div class="flex w-screen flex-wrap text-slate-800">
         <div class="flex w-full flex-col md:w-1/2">
-            <div class="flex justify-center pt-6 md:justify-start md:pl-10">
+            <div class="flex justify-center pt-6 gap-6 md:justify-start md:pl-10">
                 <img src="{{ asset('asset/balmon.png') }}" class="md:w-1/4 w-1/2" alt="">
+                <img src="https://standar.sdmdigital.id/media/logos/logo_komdigi_horizontal_loading.png"
+                    class="md:w-1/5 w-1/2 h-auto" alt="">
             </div>
             <div
                 class="md:mx-auto mx-8 flex flex-col justify-center md:justify-start lg:w-[32rem] mt-[4rem] md:mt-[6rem]">
                 <div class="w-full flex justify-center md:justify-start">
-                    <img src="https://diskominfo.penajamkab.go.id/wp-content/uploads/2020/02/logo-kominfo.png"
-                        class="w-16 h-16 mb-6 items-center">
+                    <img src="{{ asset('asset/asukay.png') }}" class="w-[70px] h-auto mb-3 items-center">
                 </div>
-                <p class="text-center text-3xl font-bold md:leading-tight md:text-left md:text-3xl">Get Started</p>
-                <p class="mt-2 text-center welcome md:text-left text-gray-400">Welcome to Balmon Attendance - Please
-                    login to your account.</p>
+                <p class="text-center text-3xl font-bold md:leading-tight md:text-left md:text-3xl">GAMON</p>
+                <p class="mt-2 text-center welcome md:text-left text-gray-400">Welcome to <span
+                        class="font-semibold">Gas Absensi Balmon</span> - Please login to
+                    your account.</p>
                 <hr class="border-t-1 border-gray-300 my-10">
                 <form class="flex flex-col items-stretch" method="POST" action="{{ route('login') }}">
                     {{ csrf_field() }}
@@ -85,7 +87,14 @@
         </div>
         <div class="relative hidden h-screen select-none md:block md:w-1/2 p-4">
             <div class="relative w-full h-full">
-                <img src="{{ asset('asset/gedung.jpg') }}" class="w-full h-full rounded-xl object-cover" alt="">
+                <!-- Container untuk slideshow -->
+                <div class="relative w-full h-full overflow-hidden rounded-xl">
+                    <div id="slider" class="flex w-full h-full transition-transform duration-700 ease-in-out">
+                        <!-- Gambar akan dimasukkan oleh JavaScript -->
+
+                    </div>
+                </div>
+                <!-- Overlay warna -->
                 <div class="absolute inset-0 bg-blue-900 opacity-40 rounded-xl"></div>
             </div>
         </div>
@@ -94,6 +103,55 @@
 
     </div>
 
+
+    <script>
+        // Daftar gambar (bisa ditambah sebanyak mungkin)
+        const images = [
+            "{{ asset('asset/image.jpeg') }}",
+            "{{ asset('asset/image1.jpeg') }}",
+            "{{ asset('asset/image2.jpeg') }}",
+        ];
+
+        const slider = document.getElementById("slider");
+
+        // Duplikat gambar pertama untuk efek looping yang lebih smooth
+        let clonedFirstImage = images[0];
+
+        // Tambahkan semua gambar ke dalam slider
+        images.forEach((src) => {
+            let img = document.createElement("img");
+            img.src = src;
+            img.className = "w-full h-full object-cover flex-shrink-0";
+            slider.appendChild(img);
+        });
+
+        // Tambahkan duplikat gambar pertama di akhir
+        let imgClone = document.createElement("img");
+        imgClone.src = clonedFirstImage;
+        imgClone.className = "w-full h-full object-cover flex-shrink-0";
+        slider.appendChild(imgClone);
+
+        let index = 0;
+        const totalSlides = images.length; // Hanya menghitung gambar asli (bukan yang duplikat)
+
+        function nextSlide() {
+            index++;
+            slider.style.transition = "transform 0.7s ease-in-out";
+            slider.style.transform = `translateX(-${index * 100}%)`;
+
+            // Jika mencapai duplikat gambar pertama, reset ke gambar pertama tanpa animasi
+            if (index === totalSlides) {
+                setTimeout(() => {
+                    slider.style.transition = "none";
+                    index = 0;
+                    slider.style.transform = `translateX(0%)`;
+                }, 700); // Tunggu sampai animasi selesai sebelum reset
+            }
+        }
+
+        // Auto play setiap 3 detik
+        setInterval(nextSlide, 3000);
+    </script>
 
 </body>
 

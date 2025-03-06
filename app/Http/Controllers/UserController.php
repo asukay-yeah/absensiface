@@ -43,7 +43,11 @@ class UserController extends Controller
         if ($absenType === 'datang') {
             if ($now->between(Carbon::parse('04:30'), Carbon::parse('09:30'))) {
                 if (Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->exists()) {
-                    return back()->with('warning', 'Anda sudah absen datang hari ini. Nomor duduk anda : ' . Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->first()->nomor_duduk);
+                    $nomor_meja = Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->first()->nomor_duduk;
+                    return back()->with([
+                        'warning' => 'Anda sudah absen datang hari ini.',
+                        'meja' => '‎' . $nomor_meja
+                    ]);
                 }
 
                 // Ambil nomor kursi acak hanya untuk staff dan magang
@@ -73,11 +77,16 @@ class UserController extends Controller
                     'keterangan' => $keterangan
                 ]);
 
-                return back()->with('success', "Absen datang berhasil! Status: {$keterangan}. Nomor duduk Anda: {$nomor_duduk}");
+                return back()->with([
+                    'success' => "Absen datang berhasil! Status: {$keterangan}.",
+                    'meja' => "{$nomor_duduk}"
+                ]);
             } else {
                 return back()->with('error', 'Waktu absen datang adalah pukul 04:30 - 09:30!');
             }
         }
+
+        
 
         // 2. ABSEN PULANG (15:00 - 18:00)
         else if ($absenType === 'pulang') {

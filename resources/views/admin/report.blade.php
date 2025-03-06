@@ -39,8 +39,11 @@
                 <div class="p-5 bg-white rounded-lg shadow-xl">
                     <div class="flex flex-col sm:flex-row sm:items-start md:justify-between xl:justify-between mb-4">
                         <!-- Search Bar -->
-                        <input class="px-3 py-1.5 border border-neutral-300 text-black rounded-md w-full sm:w-64"
-                            type="search" placeholder="Cari nama pegawai..." />
+                        <form>
+                            <input name="search" value="{{ request('search') }}"
+                                class="px-3 py-1.5 border border-neutral-300 text-black rounded-md w-full sm:w-64"
+                                type="text" placeholder="Cari nama pegawai..." />
+                        </form>
 
                         <!-- Export Button -->
                         <div class="relative">

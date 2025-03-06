@@ -149,16 +149,22 @@
                         </thead>
                         <tbody>
 
-                            @foreach ($karyawan as $item)
+                            @foreach ($karyawan as $pegawai)
                             <tr class="hover:bg-gray-100 cursor-pointer">
                                 <td class="font-medium text-neutral-900 whitespace-nowrap border text-center">
                                     {{ $loop->iteration }}</td>
-                                <td class="border capitalize">{{ $item->nama }}</td>
-                                <td class="border ">{{ $item->nip }}</td>
-                                <td class="border uppercase">{{ $item->jabatan }}</td>
-                                <td class="border uppercase">{{ $item->tim }}</td>
+                                <td class="border capitalize">{{ $pegawai->nama }}</td>
+                                <td class="border ">{{ $pegawai->nip }}</td>
+                                <td class="border uppercase">{{ $pegawai->jabatan }}</td>
+                                <td class="border">
+                                    @if($pegawai->tim == null)
+                                    Tim tidak di definisikan
+                                    @else
+                                    <p class="uppercase">{{ $pegawai->tim }}</p>
+                                    @endif
+                                </td>
                                 <td class="border flex gap-2">
-                                    <a href="#" onclick="openEditModal(this, event)" data-id="{{ $item->id }}"
+                                    <a href="#" onclick="openEditModal(this, event)" data-id="{{ $pegawai->id }}"
                                         data-dropdown-id="dropdown1"
                                         class="px-5 text-blue-900 border border-neutral-300 rounded-sm hover:bg-blue-400 duration-100 py-2 bg-blue-300">
                                         Edit
@@ -166,12 +172,12 @@
 
                                     @if(auth()->user()->role == 'super') {{-- Hanya role super yang melihat ini --}}
                                     <a href="#"
-                                        onclick="event.preventDefault();document.getElementById('deleteForm{{ $item->id }}').submit();"
+                                        onclick="event.preventDefault();document.getElementById('deleteForm{{ $pegawai->id }}').submit();"
                                         class="px-5 border text-red-900 border-neutral-300 rounded-sm hover:bg-red-400 duration-100 py-2 bg-red-300">
                                         Remove
                                     </a>
-                                    <form action="{{ route('data.destroy', $item->id) }}" method="POST"
-                                        id="deleteForm{{ $item->id }}">{{ csrf_field() }} {{ method_field('DELETE') }}
+                                    <form action="{{ route('data.destroy', $pegawai->id) }}" method="POST"
+                                        id="deleteForm{{ $pegawai->id }}">{{ csrf_field() }} {{ method_field('DELETE') }}
                                     </form>
                                     @endif
                                 </td>
@@ -236,35 +242,6 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Face Detection Section -->
-                <div class="mb-4">
-                    <label class="block mb-2 font-medium text-slate-500">Data Wajah untuk Rekognisi</label>
-                    <p class="text-sm text-gray-500 mb-2">Mohon posisikan wajah dengan jelas di depan kamera untuk
-                        proses deteksi</p>
-                </div>
-
-                <div class="relative w-full mb-4">
-                    <video id="video" class="w-full rounded-md shadow-md hidden" style="transform: scaleX(-1);"></video>
-                    <canvas id="canvas" class="hidden w-full rounded-md shadow-md"></canvas>
-                </div>
-
-                <!-- Hidden input to store face descriptor -->
-                <input type="hidden" id="face_descriptor" name="face_descriptor">
-
-                <p id="register-btn"
-                    class="cursor-pointer text-center w-full bg-[#252C58] text-white duration-150 py-3 rounded-md hover:bg-blue-800">
-                    Daftarkan
-                    Wajah Anda</p>
-                <p id="capture-btn"
-                    class="cursor-pointer text-center w-full bg-[#D6A628] text-white duration-150 py-3 rounded-md mt-3 hover:bg-yellow-600">
-                    Scan
-                    Wajah ( Ambil Gambar )</p>
-                <p id="reset-btn"
-                    class="cursor-pointer text-center w-full bg-gray-500 text-white py-2 rounded-md mt-2 hover:bg-gray-600 hidden">
-                    Ambil
-                    Gambar Ulang</p>
-
                 <!-- button submit form -->
                 <button id="submit-btn" type="submit"
                     class="w-full bg-[#198754] text-white duration-150 py-3 rounded-md mt-3 hover:bg-green-600">Tambahkan
@@ -328,13 +305,13 @@
 
                 <!-- Face Detection Section for Edit Form -->
                 <div class="mb-4">
-                    <label class="block mb-2 font-medium text-slate-500">Update Data Wajah</label>
+                    <label class="block mb-2 font-medium text-slate-500">Data Wajah</label>
                     <p class="text-sm text-gray-500 mb-2">Perbaharui data wajah pegawai untuk rekognisi</p>
                 </div>
 
                 <div class="relative w-full mb-4">
                     <video id="video1" class="w-full rounded-md shadow-md hidden"
-                        style="transform: scaleX(-1);"></video>
+                        style="transform: scale(1);"></video>
                     <canvas id="canvas1" class="hidden w-full rounded-md shadow-md"></canvas>
                 </div>
 
@@ -343,8 +320,7 @@
 
                 <p id="register-edit"
                     class="cursor-pointer text-center w-full bg-[#252C58] text-white duration-150 py-3 rounded-md hover:bg-blue-800">
-                    Daftarkan
-                    Wajah Anda
+                    Buka Kamera
                 </p>
                 <p id="capture-edit"
                     class="cursor-pointer text-center w-full bg-[#D6A628] text-white duration-150 py-3 rounded-md mt-3 hover:bg-yellow-600">
