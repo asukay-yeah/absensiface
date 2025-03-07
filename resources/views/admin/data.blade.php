@@ -177,7 +177,8 @@
                                         Remove
                                     </a>
                                     <form action="{{ route('data.destroy', $pegawai->id) }}" method="POST"
-                                        id="deleteForm{{ $pegawai->id }}">{{ csrf_field() }} {{ method_field('DELETE') }}
+                                        id="deleteForm{{ $pegawai->id }}">{{ csrf_field() }}
+                                        {{ method_field('DELETE') }}
                                     </form>
                                     @endif
                                 </td>
@@ -197,7 +198,7 @@
     <form action="{{ route('data.store') }}" method="POST">
         {{ csrf_field() }}
         <div id="dropdown"
-            class="z-10 right-5 border border-neutral-300 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-md max-w-2xl">
+            class="z-10 right-5 border border-neutral-300 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-md max-w-4xl">
             <div class="bg-white p-5 rounded-lg shadow-md max-w-full w-full">
                 <div class="flex flex-row gap-5">
                     <div class="flex flex-col w-60">
@@ -228,6 +229,16 @@
                             <option value="magang">Magang</option>
                         </select>
                     </div>
+                    <div id="security-shift-container" class="flex flex-col w-40 hidden">
+                        <label class="block mb-2 font-medium text-slate-500" for="security_shift">Pilih Shift</label>
+                        <select
+                            class="w-full p-2 border rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-900 text-neutral-900"
+                            name="security_shift" id="security_shift">
+                            <option value="">Pilih Shift</option>
+                            <option value="shift_1">Shift 1 (05:00-19:00)</option>
+                            <option value="shift_2">Shift 2 (19:00-05:00)</option>
+                        </select>
+                    </div>
                     <div class="flex flex-col w-40">
                         <label class="block mb-2 font-medium text-slate-500" for="nama">Tim
                             Kerja</label>
@@ -253,8 +264,8 @@
 
     <!-- In the "Edit Pegawai" form (dropdown1) -->
     <div id="dropdown1"
-        class="z-10 right-5 border border-neutral-300 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-md">
-        <div class="bg-white p-5 rounded-lg shadow-md max-w-full">
+        class="z-10 right-5 border border-neutral-300 max-w-4xl hidden bg-white divide-y divide-gray-100 rounded-lg shadow-md">
+        <div class="bg-white p-5 rounded-lg shadow-md max-w-4xl">
             <form id="editForm" action="{{ route('data.update', ['id' => 1]) }}" method="POST">
                 {{ csrf_field() }}
                 <input type="hidden" name="_method" value="PUT">
@@ -288,6 +299,17 @@
                             <option value="magang">Magang</option>
                         </select>
                     </div>
+                    <div id="security-shift-edit-container" class="flex flex-col w-40 hidden">
+                        <label class="block mb-2 font-medium text-slate-500" for="security_shift_edit">Pilih
+                            Shift</label>
+                        <select
+                            class="w-full p-2 border rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-900 text-neutral-900"
+                            name="security_shift" id="security_shift_edit">
+                            <option value="">Pilih Shift</option>
+                            <option value="shift_1">Shift 1 (05:00-19:00)</option>
+                            <option value="shift_2">Shift 2 (19:00-05:00)</option>
+                        </select>
+                    </div>
                     <div class="flex flex-col w-40">
                         <label class="block mb-2 font-medium text-slate-500" for="nama">Tim
                             Kerja</label>
@@ -310,8 +332,7 @@
                 </div>
 
                 <div class="relative w-full mb-4">
-                    <video id="video1" class="w-full rounded-md shadow-md hidden"
-                        style="transform: scale(1);"></video>
+                    <video id="video1" class="w-full rounded-md shadow-md hidden" style="transform: scale(1);"></video>
                     <canvas id="canvas1" class="hidden w-full rounded-md shadow-md"></canvas>
                 </div>
 
@@ -421,6 +442,69 @@
                     alert('Terjadi kesalahan saat menyimpan. Silakan coba lagi.');
                 }
             });
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Function to toggle security shift container based on jabatan selection
+            function toggleSecurityShift() {
+                const jabatanDropdown = document.getElementById('jabatan');
+                const securityShiftContainer = document.getElementById('security-shift-container');
+
+                if (jabatanDropdown && securityShiftContainer) {
+                    jabatanDropdown.addEventListener('change', function () {
+                        if (this.value === 'security') {
+                            securityShiftContainer.classList.remove('hidden');
+                        } else {
+                            securityShiftContainer.classList.add('hidden');
+                        }
+                    });
+                }
+
+                // For the edit form
+                const jabatanEditDropdown = document.getElementById('jabatan_edit');
+                const securityShiftEditContainer = document.getElementById('security-shift-edit-container');
+
+                if (jabatanEditDropdown && securityShiftEditContainer) {
+                    jabatanEditDropdown.addEventListener('change', function () {
+                        if (this.value === 'security') {
+                            securityShiftEditContainer.classList.remove('hidden');
+                        } else {
+                            securityShiftEditContainer.classList.add('hidden');
+                        }
+                    });
+                }
+            }
+
+            // Initialize the security shift toggle
+            toggleSecurityShift();
+
+            // Handle the edit form when loaded via AJAX
+            if (window.jQuery) {
+                $(document).on('click', 'a[data-dropdown-id="dropdown1"]', function () {
+                    const id = $(this).data('id');
+
+                    // Wait briefly for the AJAX to complete and form to populate
+                    setTimeout(function () {
+                        const jabatanEditValue = $('#jabatan_edit').val();
+                        if (jabatanEditValue === 'security') {
+                            $('#security-shift-edit-container').removeClass('hidden');
+
+                            // Get the security shift value via AJAX
+                            $.ajax({
+                                url: '/get-security-shift/' + id,
+                                type: 'GET',
+                                success: function (data) {
+                                    if (data.shift) {
+                                        $('#security_shift_edit').val(data.shift);
+                                    }
+                                }
+                            });
+                        } else {
+                            $('#security-shift-edit-container').addClass('hidden');
+                        }
+                    }, 300);
+                });
+            }
         });
     </script>
 

@@ -30,6 +30,7 @@ class DataController extends Controller
             'jabatan' => 'required',
             'tim' => 'nullable',
             'face_descriptor' => 'nullable',
+            'security_shift' => 'nullable'
         ]);
 
         $data = $request->all();
@@ -37,6 +38,12 @@ class DataController extends Controller
         // Store the face descriptor if provided
         if ($request->has('face_descriptor') && !empty($request->face_descriptor)) {
             $data['face_descriptor'] = $request->face_descriptor;
+        }
+
+        if ($request->jabatan === 'security' && $request->has('security_shift')) {
+            $data['security_shift'] = $request->security_shift;
+        } else {
+            $data['security_shift'] = null;
         }
 
         Pegawai::create($data);
@@ -58,6 +65,7 @@ class DataController extends Controller
             'jabatan' => 'required',
             'tim' => 'nullable',
             'face_descriptor' => 'nullable',
+            'security_shift' => 'nullable'
         ]);
 
         $karyawan = Pegawai::findOrFail($id);
@@ -67,6 +75,12 @@ class DataController extends Controller
         // Update the face descriptor if provided
         if ($request->has('face_descriptor') && !empty($request->face_descriptor)) {
             $data['face_descriptor'] = $request->face_descriptor;
+        }
+
+        if ($request->jabatan === 'security' && $request->has('security_shift')) {
+            $data['security_shift'] = $request->security_shift;
+        } else {
+            $data['security_shift'] = null;
         }
         
         $karyawan->update($data);
@@ -78,5 +92,18 @@ class DataController extends Controller
         $karyawan = Pegawai::findOrFail($id);
         $karyawan->delete();
         return redirect('/data');
+    }
+
+
+    /** 
+     * Get the security shift infrmation for an employee
+     * 
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse 
+     */
+    public function getSecurityShift($id)
+    {
+        $pegawai = Pegawai::findOrFail($id);
+        return response()->json(['shift' => $pgawai->security_shift]);
     }
 }

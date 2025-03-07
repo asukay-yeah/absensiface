@@ -42,3 +42,6 @@ Route::get('/check-attendance', function (Request $request) {
     
     return response()->json(['can_clock_out' => $hasClockIn]);
 });
+
+
+Route::get('/get-security-shift/{id}', 'DataController@getSecurityShift');
