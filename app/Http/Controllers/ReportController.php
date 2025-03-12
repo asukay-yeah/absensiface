@@ -48,8 +48,13 @@ class ReportController extends Controller
                     $bulan = $bulanMap[strtolower($search)];
                     $tahun = date('Y'); // Gunakan tahun sekarang jika tidak disebutkan
             
-                    $query->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun);
+                    $query->whereMonth('tanggal', $bulan);
                 } 
+                // Jika input hanya berupa tahun (contoh: "2025"), cari berdasarkan tahun
+                elseif (preg_match('/^(\d{4})$/', $search, $matches)) {
+                    $tahun = $matches[1];
+                    $query->whereYear('tanggal', $tahun);
+                }
                 // Jika input bukan tanggal atau bulan, cari berdasarkan pegawai atau NIP
                 else {
                     $query->whereHas('pegawai', function ($query) use ($search) {
@@ -60,10 +65,10 @@ class ReportController extends Controller
                     })->orWhere('tanggal', 'like', '%' . $search . '%');
                 }
             })
-            ->orderBy('tanggal', 'jam_masuk')
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('jam_masuk')
             ->get();
             
         return view('admin.report', compact('kehadiran'));
     }
-
 }

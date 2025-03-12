@@ -40,7 +40,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-start md:justify-between xl:justify-between mb-4">
                         <!-- Search Bar -->
                         <form>
-                            <input name="search" value="{{ request('search') }}"
+                            <input id="search-input" name="search" value="{{ request('search') }}"
                                 class="px-3 py-1.5 border border-neutral-300 text-black rounded-md w-full sm:w-64"
                                 type="text" placeholder="Cari nama pegawai..." />
                         </form>
