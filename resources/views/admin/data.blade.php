@@ -229,16 +229,6 @@
                             <option value="magang">Magang</option>
                         </select>
                     </div>
-                    <div id="security-shift-container" class="flex flex-col w-40 hidden">
-                        <label class="block mb-2 font-medium text-slate-500" for="security_shift">Pilih Shift</label>
-                        <select
-                            class="w-full p-2 border rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-900 text-neutral-900"
-                            name="security_shift" id="security_shift">
-                            <option value="">Pilih Shift</option>
-                            <option value="shift_1">Shift 1 (05:00-19:00)</option>
-                            <option value="shift_2">Shift 2 (19:00-05:00)</option>
-                        </select>
-                    </div>
                     <div class="flex flex-col w-40">
                         <label class="block mb-2 font-medium text-slate-500" for="nama">Tim
                             Kerja</label>
@@ -297,17 +287,6 @@
                             <option value="cs">CS</option>
                             <option value="driver">Driver</option>
                             <option value="magang">Magang</option>
-                        </select>
-                    </div>
-                    <div id="security-shift-edit-container" class="flex flex-col w-40 hidden">
-                        <label class="block mb-2 font-medium text-slate-500" for="security_shift_edit">Pilih
-                            Shift</label>
-                        <select
-                            class="w-full p-2 border rounded-md mb-4 focus:outline-none focus:ring-1 focus:ring-blue-900 text-neutral-900"
-                            name="security_shift" id="security_shift_edit">
-                            <option value="">Pilih Shift</option>
-                            <option value="shift_1">Shift 1 (05:00-19:00)</option>
-                            <option value="shift_2">Shift 2 (19:00-05:00)</option>
                         </select>
                     </div>
                     <div class="flex flex-col w-40">
