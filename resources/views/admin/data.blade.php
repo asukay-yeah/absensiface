@@ -158,7 +158,7 @@
                                 <td class="border uppercase">{{ $pegawai->jabatan }}</td>
                                 <td class="border">
                                     @if($pegawai->tim == null)
-                                    Tim tidak di definisikan
+                                    Tidak ada Tim
                                     @else
                                     <p class="uppercase">{{ $pegawai->tim }}</p>
                                     @endif
@@ -187,9 +187,13 @@
 
                         </tbody>
                     </table>
+
+                    <div class="text-black">
+                        <nav>
+                            {{ $karyawan->links() }}
+                        </nav>
+                    </div>
                 </div>
-
-
             </div>
         </div>
     </div>

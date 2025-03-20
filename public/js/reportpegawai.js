@@ -1,16 +1,25 @@
 if (document.getElementById("export-table") && typeof simpleDatatables.DataTable !== 'undefined') {
+    // const table = new simpleDatatables.DataTable("#export-table", {
+    //     perPageSelect: false,
+    //     template: (options, dom) => `
+    //         <div class='${options.classes.container}' ${options.scrollY.length ? `style='height: ${options.scrollY}; overflow-Y: auto;'` : ""}></div>
+    //         <div class='${options.classes.bottom}'>
+    //             <nav class='${options.classes.pagination}'>
+    //                 <button class='pagination-prev'>Previous</button>
+    //                 <button class='pagination-next'>Next</button>
+    //             </nav>
+    //         </div>
+    //     `
+    // });
+
     const table = new simpleDatatables.DataTable("#export-table", {
+        perPage: 0, // Menampilkan semua data tanpa pagination
         perPageSelect: false,
         template: (options, dom) => `
             <div class='${options.classes.container}' ${options.scrollY.length ? `style='height: ${options.scrollY}; overflow-Y: auto;'` : ""}></div>
-            <div class='${options.classes.bottom}'>
-                <nav class='${options.classes.pagination}'>
-                    <button class='pagination-prev'>Previous</button>
-                    <button class='pagination-next'>Next</button>
-                </nav>
-            </div>
         `
     });
+    
 
     // 📂 Toggle Dropdown Export
     document.getElementById("exportDropdownButton").addEventListener("click", function () {

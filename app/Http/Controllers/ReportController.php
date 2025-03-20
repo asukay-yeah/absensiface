@@ -65,10 +65,12 @@ class ReportController extends Controller
                     })->orWhere('tanggal', 'like', '%' . $search . '%');
                 }
             })
-            ->orderBy('tanggal', 'desc')
+            ->orderBy('tanggal')
             ->orderBy('jam_masuk')
             ->get();
             
         return view('admin.report', compact('kehadiran'));
     }
+
+
 }

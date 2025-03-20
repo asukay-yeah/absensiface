@@ -72,7 +72,7 @@ class UserController extends Controller
                 $isWithinShift2CheckIn = $now->between(Carbon::parse($checkInStartShift2), Carbon::parse($checkInEndShift2));
                 
                 if (!$isWithinShift1CheckIn && !$isWithinShift2CheckIn) {
-                    return back()->with('error', 'Waktu absen datang untuk security adalah pukul 04:30-06:00 atau 18:30-20:00!');
+                    return back()->with('error', 'Waktu absen datang untuk security adalah pukul 06:30-07:20 atau 18:30-19:20!');
                 }
                 
                 // Check if already checked in today
@@ -166,7 +166,7 @@ class UserController extends Controller
                 $isWithinShift2CheckOut = $now->between(Carbon::parse($checkOutStartShift2), Carbon::parse($checkOutEndShift2));
                 
                 if (!$isWithinShift1CheckOut && !$isWithinShift2CheckOut) {
-                    return back()->with('error', 'Waktu absen pulang untuk security adalah pukul 17:30-19:30 atau 04:30-06:00!');
+                    return back()->with('error', 'Waktu absen pulang untuk security adalah pukul 18:30-19:20 atau 06:30-07:20!');
                 }
                 
                 // Determine which date to check based on the current time

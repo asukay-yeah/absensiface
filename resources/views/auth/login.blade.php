@@ -28,9 +28,9 @@
     <div class="flex w-screen flex-wrap text-slate-800">
         <div class="flex w-full flex-col md:w-1/2">
             <div class="flex justify-center pt-6 gap-6 md:justify-start md:pl-10">
-                <img src="{{ asset('asset/balmon.png') }}" class="md:w-1/4 w-1/2" alt="">
-                <img src="https://standar.sdmdigital.id/media/logos/logo_komdigi_horizontal_loading.png"
-                    class="md:w-1/5 w-1/2 h-auto" alt="">
+                <img src="{{ asset('asset/balmon.png') }}" class="md:w-[200px] w-1/2" alt="">
+                <img src="https://garuda.tv/wp-content/uploads/2024/12/Logo-baru-komdigi.png"
+                    class="md:w-[100px] w-1/2 h-auto" alt="">
             </div>
             <div
                 class="md:mx-auto mx-8 flex flex-col justify-center md:justify-start lg:w-[32rem] mt-[4rem] md:mt-[6rem]">
@@ -45,7 +45,7 @@
                 <form class="flex flex-col items-stretch" method="POST" action="{{ route('login') }}">
                     {{ csrf_field() }}
                     <div class="flex flex-col form-group{{ $errors->has('email') ? ' has-error' : '' }}">
-                        <label for="email" class="text-sm font-thin mb-1 ml-1">Email</label>
+                        <label for="email" class="text-sm font-thin mb-1 ml-1">Username</label>
                         <div
                             class="relative flex overflow-hidden rounded-md border-2 transition focus-within:border-blue-800 border-gray-200 hover:border-blue-800">
                             <input type="text" id="email" name="email" value="{{ old('email') }}" required autofocus

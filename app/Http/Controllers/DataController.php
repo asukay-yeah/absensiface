@@ -19,7 +19,7 @@ class DataController extends Controller
             });
         })
         ->orderBy('id', 'desc')
-        ->get();
+        ->paginate(10);
         return view('admin.data', compact('karyawan'));
     }
 
